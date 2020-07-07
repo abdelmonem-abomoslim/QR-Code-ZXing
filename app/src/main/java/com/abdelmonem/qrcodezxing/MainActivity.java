@@ -4,6 +4,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import me.dm7.barcodescanner.zxing.ZXingScannerView;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -61,5 +64,13 @@ public class MainActivity extends AppCompatActivity implements ZXingScannerView.
     @Override
     public void handleResult(Result rawResult) {
         txtResult.setText(rawResult.getText());
+        try {
+            Intent myIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(rawResult.getText()));
+            startActivity(myIntent);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, "No application can handle this request."
+                    + " Please install a webbrowser",  Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+        }
     }
 }
