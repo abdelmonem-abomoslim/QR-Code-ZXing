@@ -11,6 +11,8 @@ import android.os.Bundle;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.abdelmonem.qrcodezxing.Model.QRURLModel;
+import com.abdelmonem.qrcodezxing.Model.QRVCardModel;
 import com.google.zxing.Result;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.PermissionToken;
@@ -63,14 +65,60 @@ public class MainActivity extends AppCompatActivity implements ZXingScannerView.
 
     @Override
     public void handleResult(Result rawResult) {
-        txtResult.setText(rawResult.getText());
-        try {
-            Intent myIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(rawResult.getText()));
-            startActivity(myIntent);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "No application can handle this request."
-                    + " Please install a webbrowser",  Toast.LENGTH_LONG).show();
-            e.printStackTrace();
+        processRawResult(rawResult.getText());
+        scannerView.startCamera();
+    }
+
+    private void processRawResult(String text) {
+        if(text.startsWith("BEGIN:")){
+            String[] tokens = text.split("\n");
+            QRVCardModel qrvCardModel = new QRVCardModel();
+            for (int i=0; i<tokens.length; i++){
+                if(tokens[i].startsWith("BEGIN:")){
+                    qrvCardModel.setType(tokens[i].substring("BEGIN:".length()));
+                }else if(tokens[i].startsWith("N:")){
+                    qrvCardModel.setName(tokens[i].substring("N:".length()));
+                }else if(tokens[i].startsWith("ORG:")){
+                    qrvCardModel.setOrg(tokens[i].substring("ORG:".length()));
+                }else if(tokens[i].startsWith("TEL:")){
+                    qrvCardModel.setTel(tokens[i].substring("TEL:".length()));
+                }else if(tokens[i].startsWith("URL:")){
+                    qrvCardModel.setUrl(tokens[i].substring("URL:".length()));
+                }else if(tokens[i].startsWith("EMAIL:")){
+                    qrvCardModel.setEmail(tokens[i].substring("EMAIL:".length()));
+                }else if(tokens[i].startsWith("ADR:")){
+                    qrvCardModel.setAddress(tokens[i].substring("ADR:".length()));
+                }else if(tokens[i].startsWith("NOTE:")){
+                    qrvCardModel.setNote(tokens[i].substring("NOTE:".length()));
+                }else if(tokens[i].startsWith("SUMAMRY:")){
+                    qrvCardModel.setSummary(tokens[i].substring("SUMMARY:".length()));
+                }else if(tokens[i].startsWith("DTSTART:")){
+                    qrvCardModel.setDtstart(tokens[i].substring("DTSTART:".length()));
+                }else if(tokens[i].startsWith("DTEND:")){
+                    qrvCardModel.setDtend(tokens[i].substring("DTEND:".length()));
+                }
+
+            }
+            txtResult.setText(qrvCardModel.getType());
+        }else if(text.startsWith("http://") ||
+            text.startsWith("https://") ||
+            text.startsWith("www.")){
+
+            QRURLModel qrurlModel = new QRURLModel(text);
+            txtResult.setText(qrurlModel.getUrl());
+            try {
+                Intent myIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(qrurlModel.getUrl()));
+                startActivity(myIntent);
+            } catch (ActivityNotFoundException e) {
+                Toast.makeText(this, "No application can handle this request."
+                        + " Please install a webbrowser",  Toast.LENGTH_LONG).show();
+                e.printStackTrace();
+                processRawResult(qrurlModel.getUrl());
+            }
+        }else{
+            txtResult.setText(text);
         }
+
+        scannerView.startCamera();
     }
 }
